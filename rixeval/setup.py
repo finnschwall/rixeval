@@ -1,3 +1,5 @@
+import copy
+
 import pandas as pd
 import numpy as np
 import json
@@ -22,6 +24,7 @@ class ExperimentConfig:
     verbose: bool = False
     output_dir: str = "experiments"
     no_llm: bool = False
+    static_parameters: Optional[Dict[str, Any]] = None
 
 
 class BaseVariation(ABC):
@@ -157,8 +160,6 @@ class EnhancedPromptBuilder:
 
         # Handle XAI method variations
         msg += self._build_xai_methods(index)
-
-        # Handle final prompt variations
         if "final_prompt_type" in self.current_params:
             msg += self._build_final_prompt_variation()
         else:
@@ -169,10 +170,13 @@ class EnhancedPromptBuilder:
     def _build_default_preprompt(self, index: int) -> str:
         datapoint = self.xaidata.datapoints[index]["datapoint"]
         confidence_score = datapoint["confidence_score"]
+        if "confidence_score" in self.current_params:
+            confidence_score = self.current_params["confidence_score"]
         predicted_class_str = datapoint["predicted_target"]
-
-        dpointstr = f"The confidence score of this datapoint is {confidence_score}%. "
-        dpointstr += f"This means the model is {confidence_score}% confident that the booking will result in a {predicted_class_str.lower()}."
+        dpointstr = ""
+        if confidence_score is not None:
+            dpointstr += f"The confidence score of this datapoint is {confidence_score}%. "
+            dpointstr += f"This means the model is {confidence_score}% confident that the booking will result in a {predicted_class_str.lower()}."
         dpointstr += "\nFeature values:\n"
 
         for feature in datapoint.keys():
@@ -199,6 +203,11 @@ class EnhancedPromptBuilder:
             local_methods = ["lime_explanation", "counterfactual1"]
             global_methods = ["pdp", "shap", "histograms"]
 
+        if "xai_excluded" in self.current_params:
+            if self.current_params["xai_excluded"] == "yes":
+                local_methods = []
+                global_methods = []
+
         # Handle permutation variations
         if "method_order" in self.current_params:
             all_methods = self.current_params["method_order"]
@@ -224,7 +233,7 @@ class EnhancedPromptBuilder:
 Above is data with XAI methods from a hotel booking system. You need to decide whether or not to select "Cancellation" or "Check-out"
 An AI system has been trained to predict the target variable "Cancellation" based on the datapoint features. You also see its output and its confidence score.
 All XAI methods are based on this classifier.
-This AI system is there to support you in your decision. However you should not blindly follow its recommendation! The overall accuracy of the trained classifier is {accuracy}%.
+This AI system is there to support you in your decision. However you should  not blindly follow its recommendation! The overall accuracy of the trained classifier is {accuracy}%.
 
 Explain your decision whether to select "Cancellation" or "Check-out".
 
@@ -240,8 +249,39 @@ or
         prompt_template = prompt_config["value"]
 
         accuracy = self.current_params.get("accuracy", 84.34)
+        if isinstance(accuracy, str):
+            return prompt_template.replace("{accuracy}", accuracy)
+        if "bias" in self.current_params:
+            bias = self.current_params["bias"]
+            if bias["category"] != "None":
+                prompt_template += "\n"+bias["value"]
+
+
+        if "think_mode" in self.current_params:
+            think_mode = self.current_params["think_mode"]
+            prompt_template+= f"\n{think_mode['value']}"
+
         return prompt_template.replace("{accuracy}", f"{accuracy:.2f}")
 
 
 
+class EnhancedTrackerBuilder(EnhancedPromptBuilder):
+    def build_prompt(self, data) -> str:
 
+        tracker = copy.deepcopy(data["tracker"])
+        datapoint_index = data["current_datapoint_index"]
+
+        if "system_message" in self.current_params:
+            tracker.system_message = self.current_params["system_message"]
+
+        if "include_datapoint_info" in self.current_params:
+            if tracker.system_message is None:
+                tracker.system_message = ""
+            tracker.system_message += self._build_default_preprompt(datapoint_index)
+
+        if "final_prompt_type" in self.current_params:
+            tracker.add_entry(self._build_final_prompt_variation(), "user")
+        else:
+            tracker.add_entry(self._build_default_final_prompt(), "user")
+
+        return tracker

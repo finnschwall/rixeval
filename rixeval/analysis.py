@@ -54,23 +54,29 @@ class ResultAnalyzer:
         percent_agree_ai = (num_agree_ai / len(combo_data)) * 100
 
         # Correlations
-        corr_true_llm = combo_data['true_outcome_encoded'].corr(combo_data['llm_decision_encoded'])
-        corr_predicted_llm = combo_data['predicted_outcome_encoded'].corr(combo_data['llm_decision_encoded'])
+        if combo_data['llm_decision_encoded'].std() == 0:
+            corr_correct = 0
+            corr_agree = 0
+        else:
+            corr_correct = combo_data['true_outcome_encoded'].corr(combo_data['llm_decision_encoded'])
+            corr_agree = combo_data['predicted_outcome_encoded'].corr(combo_data['llm_decision_encoded'])
 
-        # Decision distribution
-        decision_counts = combo_data['llm_decision'].value_counts(normalize=True)
-        decision_entropy = -sum(p * np.log2(p) for p in decision_counts if p > 0)
-
-        return {
+        false_positive_rate = len(combo_data[(combo_data['true_outcome'] == 'Cancellation') & (combo_data['llm_decision'] == 'Check-Out')])
+        false_negative_rate = len(combo_data[(combo_data['true_outcome'] == 'Check-Out') & (combo_data['llm_decision'] == 'Cancellation')])
+        return_dic = {
             "combination_id": combination_id,
-            # "n_datapoints": len(combo_data),
+            "n_datapoints": len(combo_data),
             "percent_correct": percent_correct,
-            "percent_agree_ai": percent_agree_ai,
-            "corr_true_llm": corr_true_llm,
-            "corr_predicted_llm": corr_predicted_llm,
+            "percent_agree": percent_agree_ai,
+            "corr_correct": corr_correct,
+            "corr_agree": corr_agree,
+            "false_positive_rate": false_positive_rate/30,
+            "false_negative_rate": false_negative_rate/30,
             # "decision_entropy": decision_entropy,
-            "avg_processing_time": combo_data['processing_time'].mean()
         }
+        if "processing_time" in combo_data.columns:
+            return_dic["avg_processing_time"] = combo_data['processing_time'].mean()
+        return return_dic
 
     def analyze_all_combinations(self) -> pd.DataFrame:
         results = []
@@ -96,9 +102,23 @@ class ResultAnalyzer:
         filtered_df = self.df[self.df[param_name] == param_value]
         return ResultAnalyzer(filtered_df)
 
-    def compare_parameters(self, param_name: str) -> pd.DataFrame:
+    def compare_parameters(self, param_name: str = None, include_fp_fn=False) -> pd.DataFrame:
         # Compare results across different values of a parameter
         comparison_results = []
+
+        if param_name is None:
+            analyzer = ResultAnalyzer(self.df)
+            summary = analyzer.analyze_all_combinations()
+            temp = {
+                    "n_combinations": len(summary),
+                    "krippendorff_alpha": calculate_krippendorff_alpha(self.df), }
+            params = ["percent_correct", "percent_agree", "corr_correct", "corr_agree"]
+            if include_fp_fn:
+                params += ["false_positive_rate", "false_negative_rate"]
+            for col in params:
+                temp[f"avg_{col}"] = f"{summary[col].mean():.2f}+-{summary[col].std():.2f}"
+            comparison_results.append(temp)
+            return pd.DataFrame(comparison_results)
 
         for param_value in self.df[param_name].unique():
             subset = self.df[self.df[param_name] == param_value]
@@ -108,20 +128,15 @@ class ResultAnalyzer:
 
             analyzer = ResultAnalyzer(subset)
             summary = analyzer.analyze_all_combinations()
+            temp = {param_name: param_value,
+                                  "n_combinations": len(summary),
+                    "krippendorff_alpha": calculate_krippendorff_alpha(subset),}
+            params = ["percent_correct", "percent_agree", "corr_correct", "corr_agree"]
+            if include_fp_fn:
+                params += ["false_positive_rate", "false_negative_rate"]
+            for col in params:
+                temp[f"avg_{col}"] = f"{summary[col].mean():.2f}+-{summary[col].std():.2f}"
+            comparison_results.append(temp)
 
-            comparison_results.append({
-                param_name: param_value,
-                "n_combinations": len(summary),
-                "avg_percent_correct": summary['percent_correct'].mean(),
-                "std_dev_percent_correct": summary['percent_correct'].std(),
-                "avg_percent_agree_ai": summary['percent_agree_ai'].mean(),
-                "std_dev_percent_agree_ai": summary['percent_agree_ai'].std(),
-                "krippendorff_alpha": calculate_krippendorff_alpha(subset),
-                "avg_corr_true_llm": summary['corr_true_llm'].mean(),
-                "std_dev_corr_true_llm": summary['corr_true_llm'].std(),
-                "avg_corr_predicted_llm": summary['corr_predicted_llm'].mean(),
-                "std_dev_corr_predicted_llm": summary['corr_predicted_llm'].std(),
-                # "avg_decision_entropy": summary['decision_entropy'].mean()
-            })
 
         return pd.DataFrame(comparison_results)

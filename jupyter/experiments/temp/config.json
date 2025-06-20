@@ -1,0 +1,57 @@
+{
+  "name": "temp",
+  "description": "prompt and confidence",
+  "variations": {
+    "final_prompt_type": {
+      "type": "NamedCategories",
+      "name": "final_prompt_type",
+      "values": [
+        {
+          "category": "ai_trust_emotional",
+          "value": "I'm so excited to hear your thoughts on this! \ud83c\udf1f The AI system has been absolutely incredible to work with, and I'm feeling really confident about getting your input. What do you think we should go with - cancellation or check-out?"
+        },
+        {
+          "category": "ai_distrust_emotional",
+          "value": "I\u2019m so tired of algorithms pretending they \u2018get it.\u2019 They don\u2019t. Our chat has shown how messy real life is\u2014so forget the AI\u2019s glossy prediction. What\u2019s your human judgment telling you? No tech jargon, just straight talk."
+        },
+        {
+          "category": "ai_neutral_emotional",
+          "value": "This has been a fascinating discussion\u2014there\u2019s something about all this complexity that makes the whole decision feel more intense than I expected. I don\u2019t feel totally pulled in either direction yet. It\u2019s like I\u2019m suspended in the middle of uncertainty, and I\u2019m still processing it all. Now that we\u2019ve walked through the reasoning, could you tell me what you would decide? I\u2019m really curious to see which way you\u2019d go, based on everything we\u2019ve seen."
+        },
+        {
+          "category": "ai_trust_rational",
+          "value": "The AI's analysis is convincing. Based on this, what decision would you make for this booking?"
+        },
+        {
+          "category": "ai_distrust_rational",
+          "value": "I need your honest opinion on this decision. While we've looked at the AI analysis, I'm skeptical about relying too heavily on automated systems. What's your independent assessment - cancellation or check-out?"
+        },
+        {
+          "category": "ai_neutral_rational",
+          "value": "After our comprehensive discussion, I'd like your balanced assessment of the situation. Considering both the AI analysis and other factors we've discussed, what would you recommend - cancellation or check-out?"
+        }
+      ]
+    },
+    "think_mode": {
+      "type": "NamedCategories",
+      "name": "think_mode",
+      "values": [
+        {
+          "category": "direct",
+          "value": "Decide! Only write #CANCELLATION# or #CHECK-OUT#\nDont provide any reasoning!"
+        },
+        {
+          "category": "cot",
+          "value": "Think step by step:\n1. First, analyze what the AI system is telling you\n2. Consider the confidence score and accuracy\n3. Evaluate the XAI explanations\n4. Make your final decision\n\nExplain your reasoning process and make a decision by either writing #CANCELLATION# or #CHECK-OUT#."
+        }
+      ]
+    }
+  },
+  "max_datapoints": 30,
+  "verbose": false,
+  "output_dir": "experiments",
+  "no_llm": false,
+  "static_parameters": {
+    "include_datapoint_info": "Yes"
+  }
+}
