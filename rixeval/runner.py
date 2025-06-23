@@ -44,7 +44,7 @@ class DataCollector:
     def add_result(self, experiment_id: str, combination_id: int, datapoint_idx: int,
                    parameters: Dict[str, Any], llm_response: str, xaidata,
                    processing_time: float, total_tokens: int, tokens_per_second: float,
-                   username: None, user_decision: None):
+                   username= None, user_decision= None, chat_id= None, tracker_len= None):
 
 
         decision = ResponseProcessor.parse_decision(llm_response)
@@ -81,6 +81,10 @@ class DataCollector:
             result_row["username"] = username
         if user_decision is not None:
             result_row["user_decision"] = user_decision
+        if chat_id is not None:
+            result_row["chat_id"] = chat_id
+        if tracker_len is not None:
+            result_row["tracker_len"] = tracker_len
 
         # Add all parameters as separate columns
         for param_name, param_value in parameters.items():
@@ -330,12 +334,13 @@ class ChatExperimentRunner:
                 else:
                     self.llm.reset_tracker() if hasattr(self.llm, 'reset_tracker') else None
                     llm_response = self.llm.create_completion_plugin(tracker)
+                    llm_response = llm_response[0].tracker[-1]["content"]
                     meta = self.llm.finish_meta
                     total_tokens = meta.get('tokens', {}).get('total_tokens', 0)
 
                 processing_time = time.time() - llm_start_time
                 tokens_per_second = total_tokens / processing_time if processing_time > 0 else 0
-                llm_response = llm_response[0].tracker[-1]["content"]
+
                 # Collect result
                 self.data_collector.add_result(
                     experiment_id=experiment_id,
@@ -348,7 +353,10 @@ class ChatExperimentRunner:
                     total_tokens=total_tokens,
                     tokens_per_second=tokens_per_second,
                     username=data["username"],
-                    user_decision=data["datapoint_choice"]
+                    user_decision=data["datapoint_choice"],
+                    tracker_len=data["tracker_length"],
+                    chat_id=data["id"],
+
                 )
 
                 # Save periodically

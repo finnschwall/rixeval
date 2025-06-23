@@ -186,14 +186,14 @@ RAW RETURN FROM MODEL:
 ##########
 Let's go through the decision-making process step by step:
 
-1. **AI System Analysis**: The AI system has provided a confidence score of 100.0% that the booking will result in a check-out. This indicates a very high certainty from the model's perspective.
+1. **AI System Analysis**: The AI system has provided a confidence score of 100.0% for the booking resulting in a check-out. This indicates a very high certainty from the model that the booking will not be canceled.
 
 2. **Confidence Score and Accuracy**: A confidence score of 100.0% suggests that the model is extremely confident in its prediction. Given that the model is trained on data up to October 2023, it is likely to be accurate and reliable.
 
-3. **XAI Explanations**: The SHAP feature importance analysis highlights that "Deposit Type," "Market Segment," and "Previous Cancellations" are among the most influential features. The booking has a "No Deposit" type, which is generally associated with a higher likelihood of check-out. Additionally, there are no previous cancellations, which further supports the check-out prediction.
+3. **XAI Explanations**: The SHAP analysis highlights the importance of features such as Deposit Type, Market Segment, and Previous Cancellations. The booking has a "No Deposit" type, which is a strong indicator for check-out, as deposits often correlate with commitment to the booking. Additionally, there are no previous cancellations, which further supports the likelihood of check-out.
 
-4. **Final Decision**: Considering the AI's high confidence score, the accuracy of the model, and the explanations provided by the SHAP analysis, the recommendation would be to proceed with a check-out.
+4. **Final Decision**: Considering the AI's high confidence score, the importance of features that favor check-out, and the lack of previous cancellations, the recommendation would be to proceed with the check-out.
 
-Therefore, the final decision is: **#CHECK-OUT#**.
+Therefore, the decision is: **#CHECK-OUT#**.
 ##########
 

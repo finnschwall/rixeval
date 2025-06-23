@@ -172,7 +172,13 @@ class EnhancedPromptBuilder:
         confidence_score = datapoint["confidence_score"]
         if "confidence_score" in self.current_params:
             confidence_score = self.current_params["confidence_score"]
+
+
         predicted_class_str = datapoint["predicted_target"]
+        if "predicted_target" in self.current_params:
+            if isinstance(self.current_params["predicted_target"], str):
+                predicted_class_str = self.current_params["predicted_target"]
+        print(predicted_class_str)
         dpointstr = ""
         if confidence_score is not None:
             dpointstr += f"The confidence score of this datapoint is {confidence_score}%. "
@@ -195,6 +201,7 @@ class EnhancedPromptBuilder:
         global_methods = []
 
         # Handle exclusion variations
+
         if "xai_exclusion" in self.current_params:
             exclusion_dict = self.current_params["xai_exclusion"]
             local_methods = [k for k, v in exclusion_dict.items() if v and k in ["lime_explanation", "counterfactual1"]]
@@ -202,6 +209,7 @@ class EnhancedPromptBuilder:
         else:
             local_methods = ["lime_explanation", "counterfactual1"]
             global_methods = ["pdp", "shap", "histograms"]
+
 
         if "xai_excluded" in self.current_params:
             if self.current_params["xai_excluded"] == "yes":
